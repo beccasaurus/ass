@@ -17,7 +17,7 @@ end
 describe 'ASS' do
 
   before do
-    FileUtils.rm_r File.expand_path('~/.ass')
+    FileUtils.rm_rf File.expand_path('~/.ass')
   end
 
   it 'should be able to locally install a .dll' do
@@ -32,6 +32,12 @@ describe 'ASS' do
     
     ass :uninstall, :Dogs
     ass(:list).should_not include('Dogs')
+  end
+
+  it "should be able to show an installed assembly's info" do
+    ass(:show, :Dogs).should_not include('dogs and stuff')
+    ass :install, dll(:Dogs)
+    ass(:show, :Dogs).should include('dogs and stuff')
   end
 
 end

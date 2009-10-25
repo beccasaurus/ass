@@ -5,6 +5,13 @@ import System.Reflection
 class ASS:
 	[Property(Path)] static private _path = "/home/remi/.ass/assemblies"
 
+	static def GetAssembly(name) as Assembly:
+		path = System.IO.Path.Combine(ASS.Path, name)
+		if Directory.Exists(path):
+			firstVersionDir = Directory.GetDirectories(path)[0]
+			firstFileInDir  = Directory.GetFiles(firstVersionDir)[0]
+			return Assembly.LoadFrom(firstFileInDir)
+
 def Usage():
 	print "ass.exe Usage"
 
@@ -37,7 +44,28 @@ def Uninstall(args as List):
 	else:
 		print "${ args[0] } not found"
 
+def Show(args as List):
+	path = Path.Combine(ASS.Path, args[0])
+	if Directory.Exists(path):
+		PrintOutAssemblyInfo(ASS.GetAssembly(args[0]))
+	else:
+		print "${ args[0] } not found"
+
+def PrintOutAssemblyInfo(assembly as Assembly):
+	print "FullName: ${ assembly.FullName }"	
+	print "Name: ${ assembly.GetName().Name }"	
+	print "Version: ${ assembly.GetName().Version.ToString() }\n"
+
+	for attr in assembly.GetCustomAttributes(true):
+		type  = attr.GetType()
+		match = /Assembly(\w+)Attribute/.Match(type.Name)
+		if match.Success:
+			prop = type.GetProperty(match.Groups[1].Value)
+			if prop != null:
+				print prop.Name + ': ' + prop.GetValue(attr, null)
+
 # Option Parsing
+
 args = List(argv)
 
 if args.Count == 0:
@@ -55,5 +83,7 @@ elif command == 'install':
 	Install(args)
 elif command == 'uninstall':
 	Uninstall(args)
+elif command == 'show':
+	Show(args)
 else:
 	print "Unknown command: ${ command }"
