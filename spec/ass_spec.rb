@@ -26,4 +26,12 @@ describe 'ASS' do
     ass(:list).should include('Dogs')
   end
 
+  it 'should be able to uninstall an assembly' do
+    ass :install, dll(:Dogs)
+    ass(:list).should include('Dogs')
+    
+    ass :uninstall, :Dogs
+    ass(:list).should_not include('Dogs')
+  end
+
 end
