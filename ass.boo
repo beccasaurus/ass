@@ -198,7 +198,9 @@ class ASS:
 
 		def Path(relative_path as string) as string:
 			without_slash = /\/(.*)/.Match(relative_path).Groups[1].Value
-			return IoPath.Combine(URL, without_slash)
+			combined      = IoPath.Combine(URL, without_slash)
+			windows_fix   = combined.Replace("\\", "/")
+			return windows_fix
 
 		def GET(relative_path as string) as string:
 			# this gives me a weird error on Windows ... URI formats not supported?
