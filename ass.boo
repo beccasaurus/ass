@@ -201,7 +201,13 @@ class ASS:
 			return IoPath.Combine(URL, without_slash)
 
 		def GET(relative_path as string) as string:
-			return UTF8Encoding().GetString(WebClient().DownloadData( Path(relative_path) ))
+			# this gives me a weird error on Windows ... URI formats not supported?
+			# return UTF8Encoding().GetString(WebClient().DownloadData( Path(relative_path) ))
+			response = HttpWebRequest.Create( Path(relative_path) ).GetResponse()
+			html     = ""
+			using reader = StreamReader(response.GetResponseStream()):
+				html = reader.ReadToEnd()
+			return html
 
 		def Search(query):
 			return GET("/?q=${ query }")
