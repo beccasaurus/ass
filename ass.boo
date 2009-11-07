@@ -179,9 +179,17 @@ class ASS:
 			get:
 				return Repository.Package(self, name)
 
-		def Path(relative as string) as string:
-			without_slash = /\/(.*)/.Match(relative).Groups[1].Value
+		def Path(relative_path as string) as string:
+			without_slash = /\/(.*)/.Match(relative_path).Groups[1].Value
 			return IoPath.Combine(URL, without_slash)
+
+		def GET(relative_path as string) as string:
+			print "Requesting ${ Path(relative_path) }"
+			return UTF8Encoding().GetString(WebClient().DownloadData( Path(relative_path) ))
+
+		def Search(query):
+			print "Searching for ${ query } on ${ URL }"
+			return GET("/?q=${ query }")
 
 		def Push(filepath):
 			params = Dict[of string, object]()
@@ -228,6 +236,16 @@ class ASS:
 			Arguments = parser.Arguments
 			Command   = (Arguments[0] if Arguments.Length > 0 else null)
 
+		Repository as ASS.Repository:
+			get:
+				option = GetOption('s', 'source')
+				return (ASS.DefaultRepository if option == null else Repository(option))
+
+		def GetOption(short_version, long_version) as string:
+			option = Options[short_version]
+			option = Options[long_version] if option == null
+			return option as string
+
 		def Run():
 			if Command == null:
 				Usage()
@@ -254,7 +272,7 @@ class ASS:
 
 
 		def Usage():
-			print "ass.exe Usage"
+			print "ASS Usage ..."
 
 		def PrintList():
 			print "Available Assemblies:\n"
@@ -266,14 +284,10 @@ class ASS:
 			print "Installed #{ packageVersion.Package.Name } #{ packageVersion.Name }"
 
 		def Push(filepath):
-			ASS.DefaultRepository.Push(filepath)
+			Repository.Push(filepath)
 
 		def Search(query):
-			server   = "http://localhost:15924/" # make this dynamic
-			url      = "${ server }?q=${ query }"
-			response = UTF8Encoding().GetString(WebClient().DownloadData(url))
-			print "Search Results:\n"
-			print response
+			print "Search Results:\n" + Repository.Search(query)
 
 		def Uninstall(name as string):
 			ASS.Uninstall(name)

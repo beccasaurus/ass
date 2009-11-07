@@ -24,6 +24,12 @@ class Arguments:
 			# look for starts of new parameters, eg. -x --x /x ... and look for =foo :foo
 			parts = spliter.Split(part, 3)
 
+			# tweet the algorithm to accept http://fooo.com[:80]/whatever as a value
+			if parts.Length > 0:
+				if parts[0].ToLower().StartsWith("http"):
+					parts    = array(string, 1)
+					parts[0] = part
+
 			# probably a value, eg. 5
 			if parts.Length == 1:
 				if param != null:

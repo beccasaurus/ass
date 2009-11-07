@@ -36,4 +36,24 @@ describe 'ASS Server' do
 
   it 'should be able to GET to show information about a remote assembly'
 
+  describe 'Different remote servers' do
+
+    before(:all){ start_example_ruby_web_server2 }
+    after(:all){  stop_example_ruby_web_server2  }
+
+    it 'should be able to specify a server (repository) to search against / push to' do
+      ass(:search, "dogs --source #{ example_server   }").should_not include('Dogs')
+      ass(:search, "dogs --source #{ example_server_2 }").should_not include('Dogs')
+
+      ass :push, "#{ dll(:Dogs) } --source #{ example_server }"
+      ass(:search, "dogs --source #{ example_server   }").should     include('Dogs')
+      ass(:search, "dogs --source #{ example_server_2 }").should_not include('Dogs')
+
+      ass :push, "#{ dll(:Dogs) } --source #{ example_server_2 }"
+      ass(:search, "dogs --source #{ example_server   }").should include('Dogs')
+      ass(:search, "dogs --source #{ example_server_2 }").should include('Dogs')
+    end
+
+  end
+
 end

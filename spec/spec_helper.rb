@@ -18,8 +18,8 @@ module AssTestingHelpers
     spec_file 'webserver.log'
   end
 
-  def ymlfile
-    spec_file 'assemblies.yml'
+  def ymlfile port
+    spec_file "assemblies.#{ port }.yml"
   end
 
   def ass_config_dir
@@ -30,16 +30,16 @@ module AssTestingHelpers
     File.file?(logfile) ? File.read(logfile) : ''
   end
 
-  def persisted_assemblies
-    File.file?(ymlfile) ? YAML.load_file(ymlfile) : {}
+  def persisted_assemblies port
+    File.file?(ymlfile(port)) ? YAML.load_file(ymlfile(port)) : {}
   end
 
-  def persist_uploaded_assembly params
-    assemblies = persisted_assemblies
+  def persist_uploaded_assembly port, params
+    assemblies = persisted_assemblies(port)
     assemblies[params['Name']] ||= {}
     assemblies[params['Name']][params['Version']] = params
 
-    File.open(ymlfile, 'w'){|f| f << assemblies.to_yaml }
+    File.open(ymlfile(port), 'w'){|f| f << assemblies.to_yaml }
   end
 
   def example_ruby_app
@@ -52,7 +52,7 @@ module AssTestingHelpers
 
       # GET /q=
       if query = params['q']
-        persisted_assemblies.each do |name, versions|
+        persisted_assemblies(request.port).each do |name, versions|
           if name.downcase.include?(query.downcase)
             response.write(name)
           else
@@ -69,7 +69,7 @@ module AssTestingHelpers
       # POST /
       elsif params['file']
         params['filepath'] = params['file'][:tempfile].path
-        persist_uploaded_assembly(params)
+        persist_uploaded_assembly(request.port, params)
         response.write "Uploaded Assembly: #{ params['Name'] } #{ params['Version'] }"
 
       elsif request.path_info == '/upload'
@@ -81,7 +81,7 @@ module AssTestingHelpers
 
       elsif request.path_info =~ %r{/(.*)\.dll}
         name = $1
-        first_version_params = persisted_assemblies[name].first.last # first returns ['0.0.0.0', { params }]
+        first_version_params = persisted_assemblies(request.port)[name].first.last # first returns ['0.0.0.0', { params }]
         path = first_version_params['filepath']
 
         # taken from Rack::File#serving
@@ -103,16 +103,23 @@ module AssTestingHelpers
     }
   end
 
-  def start_example_ruby_web_server
-    @pid = fork {
-      $0 = 'Example ruby web application for testing ASS'
-      Capture { Rack::Handler::Thin.run example_ruby_app, :Port => 15924 }
+  def example_server()   "http://localhost:15924" end
+  def example_server_2() "http://localhost:15925" end
+
+  def start_example_ruby_web_server2() start_example_ruby_web_server(15925) end
+  def start_example_ruby_web_server port = 15924
+    @server_pids ||= {}
+    @server_pids[port] = fork {
+      $0 = "Example ruby web application for testing ASS on port #{ port }"
+      Capture { Rack::Handler::Thin.run example_ruby_app.clone, :Port => port }
     }
-    Process.detach(@pid)
+    Process.detach(@server_pids[port])
+    sleep 0.5
   end
 
-  def stop_example_ruby_web_server
-    Process.kill 'INT', @pid
+  def stop_example_ruby_web_server2() stop_example_ruby_web_server(15925) end
+  def stop_example_ruby_web_server port = 15924
+    Process.kill 'INT', @server_pids[port]
   end
 end
 
@@ -122,6 +129,7 @@ Spec::Runner.configure do |config|
   config.before(:each) do
     FileUtils.rm_rf ass_config_dir
     FileUtils.rm_f  logfile
-    FileUtils.rm_f  ymlfile
+    FileUtils.rm_f  ymlfile(15924)
+    FileUtils.rm_f  ymlfile(15925)
   end
 end
