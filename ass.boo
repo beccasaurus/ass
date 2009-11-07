@@ -3,6 +3,7 @@
 import System
 import System.IO
 import System.Net
+import System.Text
 import System.Reflection
 import System.Collections.Generic.Dictionary as Dict
 import FormUpload from "lib/FormUpload.dll"
@@ -41,6 +42,8 @@ class ASS:
 				Usage()
 			elif command == 'list':
 				PrintList()
+			elif command == 'search':
+				Search(args[0])
 			elif command == 'install':
 				Install(args)
 			elif command == 'push':
@@ -78,6 +81,7 @@ class ASS:
 				print "Not a file ... not supported yet!"
 
 		def Push(filepath):
+			server = "http://localhost:15924/" # make this dynamic
 			if File.Exists(filepath):
 				# get bytes for file
 				stream = FileStream(filepath, FileMode.Open, FileAccess.Read)
@@ -92,10 +96,16 @@ class ASS:
 				params.Add("file", FormUpload.FileParameter(bytes, filepath, "plain/text"))
 
 				# do the POST
-				response = FormUpload.MultipartFormDataPost("http://localhost:15924/", "ASS .Net Package Manager", params)
+				response = FormUpload.MultipartFormDataPost(server, "ASS .Net Package Manager", params)
 
 			else:
 				print "Not a file ... not supported yet!"
+
+		def Search(query):
+			server   = "http://localhost:15924/" # make this dynamic
+			url      = "${ server }?q=${ query }"
+			response = UTF8Encoding().GetString(WebClient().DownloadData(url))
+			print response
 
 		def Uninstall(args as List):
 			path = System.IO.Path.Combine(ASS.Path, args[0])

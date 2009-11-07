@@ -1,16 +1,2 @@
 --- 
-Version: 0.0.0.0
-Name: Dogs
-Title: Animals
-Description: An assembly with dogs and stuff
-FullName: Dogs, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null
-file: 
-  :head: |
-    Content-Disposition: form-data; name="file"; filename="./spec/dll/Dogs.dll";
-    Content-Type: plain/text
-
-  :type: plain/text
-  :tempfile: !ruby/object:File {}
-
-  :filename: Dogs.dll
-  :name: file
+q: dogs
