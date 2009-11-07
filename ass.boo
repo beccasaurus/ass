@@ -36,9 +36,13 @@ class ASS:
 		get:
 			return "ASS .Net Package Manager"
 
+	static private _repo as Repository
 	static DefaultRepository as Repository:
 		get:
-			return Repository("http://localhost:15924")
+			repo = (_repo if _repo != null else Repository("http://ass.emblies.net"))
+			return repo
+		set:
+			_repo = value
 			
 	static def GetPath() as string:
 		return Path
