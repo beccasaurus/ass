@@ -13,14 +13,18 @@ import FormUpload  from "lib/FormUpload.dll"
 
 class ASS:
 """The primary class and namespace for the ASS .NET assembly management tool"""
-	[Property(Path)] static private _path = "/home/remi/.ass/assemblies"
+	[Property(Path)] static private _path = "/home/remi/.ass"
 
 	# Static helper methods and properties
 
+	static AssemblyPath as string:
+		get:
+			return GetPath("assemblies")
+
 	static Packages as (Package):
 		get:
-			if Directory.Exists(ASS.Path):
-				return [ Package(dir) for dir in Directory.GetDirectories(ASS.Path) ].ToArray(Package)
+			if Directory.Exists(ASS.AssemblyPath):
+				return [ Package(dir) for dir in Directory.GetDirectories(ASS.AssemblyPath) ].ToArray(Package)
 			else:
 				return array(Package, 0)
 				
@@ -47,6 +51,9 @@ class ASS:
 	
 	static def GetPath(x as string, y as string, z as string) as string:
 		return IoPath.Combine( GetPath(x, y), z )
+	
+	static def GetPath(x as string, y as string, z as string, zz as string) as string:
+		return IoPath.Combine( GetPath(x, y, z), zz )
 				
 	static def GetPackage(name as string) as Package:
 		return List(Packages).Find() do (package as Package):
@@ -71,8 +78,8 @@ class ASS:
 		version  = assembly.GetName().Version.ToString()
 		dll_name = "${ name }-${ version }.dll"
 
-		Directory.CreateDirectory( ASS.GetPath(name, version) )
-		File.Copy(path, ASS.GetPath(name, version, dll_name), true)
+		Directory.CreateDirectory( ASS.GetPath(ASS.AssemblyPath, name, version) )
+		File.Copy(path, ASS.GetPath(ASS.AssemblyPath, name, version, dll_name), true)
 
 		return GetPackageVersion(name, version)
 
@@ -246,6 +253,9 @@ class ASS:
 			option = Options[long_version] if option == null
 			return option as string
 
+		def CheckCredentialsFor(repo as Repository):
+			pass # deal with this later ...
+
 		def Run():
 			if Command == null:
 				Usage()
@@ -281,9 +291,13 @@ class ASS:
 
 		def Install(file_or_name as string):
 			packageVersion = ASS.Install(file_or_name)
-			print "Installed #{ packageVersion.Package.Name } #{ packageVersion.Name }"
+			if packageVersion != null:
+				print "Installed ${ packageVersion.Package.Name } ${ packageVersion.Name }"
+			else:
+				print "Hmmm ... didn't work?"
 
 		def Push(filepath):
+			CheckCredentialsFor(Repository)
 			Repository.Push(filepath)
 
 		def Search(query):
