@@ -2,6 +2,7 @@
 
 import System
 import System.IO
+import System.IO.Path as IoPath
 import System.Net
 import System.Text
 import System.Reflection
@@ -13,12 +14,74 @@ class ASS:
 
 	[Property(Path)] static private _path = "/home/remi/.ass/assemblies"
 
+	static Packages as (Package):
+		get:
+			return [ Package(dir) for dir in Directory.GetDirectories(ASS.Path) ].ToArray(Package)
+				
+
+	static PackageNames as (string):
+		get:
+			return [ package.Name for package in Packages ].ToArray(string)
+				
+	static def GetPackage(name as string) as Package:
+		return List(Packages).Find() do (package as Package):
+			return package.Name.ToLower() == name.ToLower()
+
+	static def GetPackageVersion(name, version) as Package:
+		return List( GetPackage(name).Versions ).Find() do (version as PackageVersion):
+			return version.Name == version
+
 	static def GetAssembly(name) as Assembly:
-		path = System.IO.Path.Combine(ASS.Path, name)
-		if Directory.Exists(path):
-			firstVersionDir = Directory.GetDirectories(path)[0]
-			firstFileInDir  = Directory.GetFiles(firstVersionDir)[0]
-			return Assembly.LoadFrom(firstFileInDir)
+		return GetPackage(name).Assembly
+
+	class Package:
+	"""Represents a .NET assembly and (unique name) and its versions (can have many versions)."""
+		[Property(Path)] _path as string
+
+		Name as string:
+			get:
+				return IoPath.GetFileName(Path)
+
+		VersionNames as (string):
+			get:
+				return [ version.Name for version in Versions ].ToArray(string)
+
+		Versions as (PackageVersion):
+			get:
+				return [ PackageVersion(self, dir) for dir in Directory.GetDirectories(Path) ].ToArray(PackageVersion)
+
+		MostRecentVersion as PackageVersion:
+			get:
+				return Versions[0]
+
+		Assembly as System.Reflection.Assembly:
+			get:
+				return MostRecentVersion.Assembly
+
+		def constructor(path as string):
+			Path = path
+
+	class PackageVersion:
+	"""Represents a particular version of a Package.  The actual assemblies are associated with a particular version."""
+		[Property(Path)]    _path    as string
+		[Property(Package)] _package as Package
+
+		Name as string:
+			get:
+				return IoPath.GetFileName(Path)
+
+		AssemblyPath as string:
+			get:
+				return Directory.GetFiles(Path, "*.dll")[0]
+
+		Assembly as System.Reflection.Assembly:
+			get:
+				return Assembly.LoadFrom(AssemblyPath)
+				
+
+		def constructor(package as Package, path as string):
+			Package = package
+			Path    = path
 
 	class CLI:
 	"""Command line interface for ass.exe"""
@@ -61,12 +124,8 @@ class ASS:
 
 		def PrintList():
 			print "Available Assemblies:\n"
-			if Directory.Exists(ASS.Path):
-				availableAssemblyNames = Directory.GetDirectories(ASS.Path)
-				for name in availableAssemblyNames:
-					print System.IO.Path.GetFileName(name)
-					for version in Directory.GetDirectories(name):
-						print '  ' + System.IO.Path.GetFileName(version)
+			for package in ASS.Packages:
+				print "${ package.Name } (${ List(package.Versions).Join(',') })"
 
 		def Install(args as List):
 			if File.Exists(args[0]):
