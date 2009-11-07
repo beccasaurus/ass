@@ -52,9 +52,18 @@ module AssTestingHelpers
 
       # GET /q=
       if query = params['q']
-        assembly_names = persisted_assemblies.keys.sort
-        assembly_names.each do |name|
-          response.write(name) if name.downcase.include?(query)
+        persisted_assemblies.each do |name, versions|
+          if name.downcase.include?(query)
+            response.write(name)
+          else
+            # check versions (for descriptions) ... no match on name
+            versions.each do |version, info|
+              if info['Description'] and info['Description'].downcase.include?(query)
+                response.write(name)
+                break
+              end
+            end
+          end
         end
 
       # POST /

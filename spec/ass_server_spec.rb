@@ -17,7 +17,11 @@ describe 'ASS Server' do
     ass(:search, 'dogs').should include('Dogs')
   end
 
-  it 'should be able to GET the results of a search request and display it (by Description)'
+  it 'should be able to GET the results of a search request and display it (by Description)' do
+    ass(:search, '"and stuff"').should_not include('Dogs')
+    ass :push, dll(:Dogs)
+    ass(:search, '"and stuff"').should include('Dogs')
+  end
 
   it 'should be able to download and install an assembly from a remote server'
 
