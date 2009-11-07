@@ -59,18 +59,21 @@ class ASS:
 		return List(Packages).Find() do (package as Package):
 			return package.Name.ToLower() == name.ToLower()
 
-	static def GetPackageVersion(name, version) as PackageVersion:
-		return List( GetPackage(name).Versions ).Find() do (version as PackageVersion):
-			return version.Name == version
+	static def GetPackageVersion(name as string, version as string) as PackageVersion:
+		return List( GetPackage(name).Versions ).Find() do (v as PackageVersion):
+			return v.Name.ToLower() == version.ToLower()
 
 	static def GetAssembly(name) as Assembly:
 		return GetPackage(name).Assembly
 
 	static def Install(name_or_file as string) as PackageVersion:
+		return Install(name_or_file, ASS.DefaultRepository)
+
+	static def Install(name_or_file as string, repo as Repository) as PackageVersion:
 		if File.Exists(name_or_file):
 			return InstallFromFile(name_or_file)
 		else:
-			return InstallFromWeb(name_or_file)
+			return InstallFromWeb(name_or_file, repo)
 
 	static def InstallFromFile(path) as PackageVersion:
 		assembly = Assembly.LoadFrom(path)
@@ -84,9 +87,12 @@ class ASS:
 		return GetPackageVersion(name, version)
 
 	static def InstallFromWeb(name) as PackageVersion:
+		return InstallFromWeb(name, ASS.DefaultRepository)
+
+	static def InstallFromWeb(name, repo as Repository) as PackageVersion:
 		temporary_filename = "${ name }.dll"
-		ASS.DefaultRepository[name].DownloadTo(temporary_filename)
-		InstallFromFile(temporary_filename)
+		repo[name].DownloadTo(temporary_filename)
+		return InstallFromFile(temporary_filename)
 
 	static def Uninstall(name):
 		Directory.Delete( GetPackage(name).Path, true )
@@ -191,11 +197,9 @@ class ASS:
 			return IoPath.Combine(URL, without_slash)
 
 		def GET(relative_path as string) as string:
-			print "Requesting ${ Path(relative_path) }"
 			return UTF8Encoding().GetString(WebClient().DownloadData( Path(relative_path) ))
 
 		def Search(query):
-			print "Searching for ${ query } on ${ URL }"
 			return GET("/?q=${ query }")
 
 		def Push(filepath):
@@ -290,7 +294,7 @@ class ASS:
 				print "${ package.Name } (${ List(package.Versions).Join(',') })"
 
 		def Install(file_or_name as string):
-			packageVersion = ASS.Install(file_or_name)
+			packageVersion = ASS.Install(file_or_name, Repository)
 			if packageVersion != null:
 				print "Installed ${ packageVersion.Package.Name } ${ packageVersion.Name }"
 			else:

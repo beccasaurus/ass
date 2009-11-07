@@ -179,21 +179,26 @@ post '/' do
   end
 end
 
-get '/:name' do
-  @assembly = Assembly.first :name => params[:name].downcase
-  haml :assembly
-end
-
 get '/:name/:version.dll' do
-  @assembly = Assembly.first :name => params[:name].downcase
+  @assembly = Assembly.first :name.like => params[:name].downcase
   @version  = @assembly.versions.detect {|version| version.version == params[:version].downcase }
   redirect @version.download_path
 end
 
 get '/:name/:version' do
-  @assembly = Assembly.first :name => params[:name].downcase
+  @assembly = Assembly.first :name.like => params[:name].downcase
   @version  = @assembly.versions.detect {|version| version.version == params[:version].downcase }
   haml :version
+end
+
+get '/:name.dll' do
+  @assembly = Assembly.first :name.like => params[:name].downcase
+  redirect @assembly.latest_version.download_path
+end
+
+get '/:name' do
+  @assembly = Assembly.first :name.like => params[:name].downcase
+  haml :assembly
 end
 
 __END__
