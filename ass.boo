@@ -78,7 +78,20 @@ class ASS:
 				File.Copy(args[0], dll_path, true)
 				print "Installed ${ assemblyName.Name }-${ assemblyName.Version }"
 			else:
-				print "Not a file ... not supported yet!"
+				server    = "http://localhost:15924/" # make this dynamic
+				url       = "${ server }/${ args[0] }.dll"
+				dll_bytes = WebClient().DownloadData(url)
+				
+				using writer = BinaryWriter(File.Open("${ args[0] }.dll", FileMode.Create)):
+					writer.Write(dll_bytes)
+
+				assemblyName = Assembly.LoadFrom("${ args[0] }.dll").GetName()
+				path         = System.IO.Path.Combine(assemblyName.Name, assemblyName.Version.ToString())
+				path         = System.IO.Path.Combine(ASS.Path, path)
+				dll_path     = System.IO.Path.Combine(path, "${ assemblyName.Name }-${ assemblyName.Version }.dll")
+				Directory.CreateDirectory(path)
+				File.Copy("${ args[0] }.dll", dll_path, true)
+				print "Installed ${ assemblyName.Name }-${ assemblyName.Version }"
 
 		def Push(filepath):
 			server = "http://localhost:15924/" # make this dynamic
@@ -105,6 +118,7 @@ class ASS:
 			server   = "http://localhost:15924/" # make this dynamic
 			url      = "${ server }?q=${ query }"
 			response = UTF8Encoding().GetString(WebClient().DownloadData(url))
+			print "Search Results:\n"
 			print response
 
 		def Uninstall(args as List):

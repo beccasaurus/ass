@@ -53,12 +53,12 @@ module AssTestingHelpers
       # GET /q=
       if query = params['q']
         persisted_assemblies.each do |name, versions|
-          if name.downcase.include?(query)
+          if name.downcase.include?(query.downcase)
             response.write(name)
           else
             # check versions (for descriptions) ... no match on name
             versions.each do |version, info|
-              if info['Description'] and info['Description'].downcase.include?(query)
+              if info['Description'] and info['Description'].downcase.include?(query.downcase)
                 response.write(name)
                 break
               end
@@ -67,9 +67,32 @@ module AssTestingHelpers
         end
 
       # POST /
-      elsif uploaded_assembly = params['file']
+      elsif params['file']
+        params['filepath'] = params['file'][:tempfile].path
         persist_uploaded_assembly(params)
         response.write "Uploaded Assembly: #{ params['Name'] } #{ params['Version'] }"
+
+      elsif request.path_info == '/upload'
+        response.write "<form action='/' method='post' enctype='multipart/form-data'>"
+        response.write "  Name: <input type='text' name='Name' />"
+        response.write "  <input type='file' name='file' />"
+        response.write "  <input type='submit' />"
+        response.write "</form>"
+
+      elsif request.path_info =~ %r{/(.*)\.dll}
+        name = $1
+        first_version_params = persisted_assemblies[name].first.last # first returns ['0.0.0.0', { params }]
+        path = first_version_params['filepath']
+
+        # taken from Rack::File#serving
+        body = [ File.read(path) ]
+        size = Rack::Utils.bytesize body.first
+
+        return [ 200, {
+          'Last-Modified'  => File.mtime(path).httpdate,
+          'Content-Type'   => 'application/x-msdos-program',
+          'Content-Length' => size.to_s
+        }, body ]
 
       # GET /
       else
