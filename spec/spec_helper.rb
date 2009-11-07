@@ -114,7 +114,6 @@ module AssTestingHelpers
       Capture { Rack::Handler::Thin.run example_ruby_app.clone, :Port => port }
     }
     Process.detach(@server_pids[port])
-    sleep 0.5
   end
 
   def stop_example_ruby_web_server2() stop_example_ruby_web_server(15925) end
@@ -133,3 +132,5 @@ Spec::Runner.configure do |config|
     FileUtils.rm_f  ymlfile(15925)
   end
 end
+
+at_exit { exit! } # because we fork ...
