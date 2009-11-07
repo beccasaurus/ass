@@ -115,7 +115,7 @@ get '/' do
   if query = params[:q]
     @assemblies = Assembly.search(query)
     @versions   = Version.search(query)
-    @assemblies = ( @assemblies + @versions.map(&:assembly) ).uniq[0..19]
+    @assemblies = ( @assemblies + @versions.map {|v| v.assembly } ).uniq[0..19]
     hhaml(cli? ? :cli_results : :results)
   else
     hhaml :index
